@@ -29,7 +29,7 @@ Default option functions:
 
 ```
 cmd.WithBaseCommand(*exec.Cmd)
-cmd.WithStdStreams
+cmd.WithStdStreams()
 cmd.WithStdout(...io.Writers)
 cmd.WithStderr(...io.Writers)
 cmd.WithTimeout(time.Duration)
@@ -37,21 +37,15 @@ cmd.WithWorkingDir(string)
 cmd.WithEnv(cmd.EnvVars)
 ```
 
-#### Example
+### Example
 
 ```go
-c := cmd.New("echo hello", cmd.WithStdStreams)
-c.Run()
-```
-
-#### Set custom options
-
-```go
-setWorkingDir := func (c *Command) {
-c.WorkingDir = "/tmp/test"
-}
-
-c := cmd.New("pwd", setWorkingDir)
+c := cmd.New("echo hello", 
+	cmd.WithStdStreams(), 
+	cmd.WithWorkingDir("/tmp/test"),
+	cmd.WithStdout(linestream.New(func(line string) {
+	    fmt.Println(line)
+    })))
 c.Run()
 ```
 
