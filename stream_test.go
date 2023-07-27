@@ -189,7 +189,6 @@ func TestStreamingLineBuffering(t *testing.T) {
 	for i := 0; i < 3; i++ {
 		input := "foo"
 		n, err := out.Write([]byte(input))
-
 		if err != nil {
 			t.Errorf("got err '%v', expected nil", err)
 		}
@@ -210,7 +209,6 @@ func TestStreamingLineBuffering(t *testing.T) {
 	// Write a line with newline that terminate the previous input
 	input := "bar\n"
 	n, err := out.Write([]byte(input))
-
 	if err != nil {
 		t.Errorf("got err '%v', expected nil", err)
 	}
@@ -326,7 +324,6 @@ func TestStreamingErrLineBufferOverflow2(t *testing.T) {
 	// Get "bar" into the buffer by omitting its newline
 	input := "foo\nbar"
 	n, err := out.Write([]byte(input))
-
 	if err != nil {
 		t.Errorf("got err '%v', expected nil", err)
 	}
@@ -395,7 +392,6 @@ func TestStreamingSetLineBufferSize(t *testing.T) {
 	out.SetLineBufferSize(cmd.DefaultLineBufferSize * 2)
 
 	n, err := out.Write(longLine)
-
 	if err != nil {
 		t.Errorf("error '%v', expected nil", err)
 	}

@@ -1,8 +1,13 @@
+// Package cmd runs external commands with concurrent access to output and
+// status. It wraps the Go standard library os/exec.Command to correctly handle
+// reading output (STDOUT and STDERR) while a command is running and killing a
+// command. All operations are safe to call from multiple goroutines.
 package cmd
 
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"os"
@@ -256,7 +261,8 @@ func (c *Cmd) Run() error {
 }
 
 func (c *Cmd) getExitCode(err error) {
-	if exitErr, ok := err.(*exec.ExitError); ok {
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) {
 		if status, ok := exitErr.Sys().(syscall.WaitStatus); ok {
 			c.exitCode = status.ExitStatus()
 		}
