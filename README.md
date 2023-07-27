@@ -15,12 +15,13 @@ err := c.Run(context.TODO())
 
 fmt.Println(c.Stdout())
 fmt.Println(c.Stderr())
-```
 
-execute shell file with arguments
+
+// execute shell file with arguments
 
 shellCmd, err := shellquote.Quote("a.sh", "arg1", "args")
-c := cmd.New(shellCmd)
+c2 := cmd.New(shellCmd)
+```
 
 ## Configure the command
 
