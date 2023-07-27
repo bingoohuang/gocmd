@@ -1,3 +1,5 @@
+//go:build !windows
+
 package cmd
 
 import (
@@ -19,8 +21,9 @@ func createBaseCommand(c *Cmd) *exec.Cmd {
 //	c.Run(context.TODO())
 func WithUser(credential syscall.Credential) func(c *Cmd) {
 	return func(c *Cmd) {
-		c.baseCommand.SysProcAttr = &syscall.SysProcAttr{
-			Credential: &credential,
+		if c.BaseCommand.SysProcAttr == nil {
+			c.BaseCommand.SysProcAttr = &syscall.SysProcAttr{}
 		}
+		c.BaseCommand.SysProcAttr.Credential = &credential
 	}
 }

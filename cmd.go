@@ -20,7 +20,7 @@ import (
 type Cmd struct {
 	stderrWriter io.Writer
 	StdoutWriter io.Writer
-	baseCommand  *exec.Cmd
+	BaseCommand  *exec.Cmd
 	Dir          string
 	Command      string
 	WorkingDir   string
@@ -65,7 +65,7 @@ func New(cmd string, options ...func(*Cmd)) *Cmd {
 		Timeout: 1 * time.Minute,
 	}
 	c.Env = append(c.Env, os.Environ()...)
-	c.baseCommand = createBaseCommand(c)
+	c.BaseCommand = createBaseCommand(c)
 	c.StdoutWriter = io.MultiWriter(&c.StdoutBuf, &c.CombinedBuf)
 	c.stderrWriter = io.MultiWriter(&c.StderrBuf, &c.CombinedBuf)
 
@@ -103,7 +103,7 @@ func Run(cmd string, options ...func(*Cmd)) (string, error) {
 func WithBaseCommand(baseCommand *exec.Cmd) func(c *Cmd) {
 	return func(c *Cmd) {
 		baseCommand.Args = append(baseCommand.Args, c.Command)
-		c.baseCommand = baseCommand
+		c.BaseCommand = baseCommand
 	}
 }
 
@@ -216,7 +216,7 @@ func (c *Cmd) checkExecuted(property string) {
 
 // Run runs with Context
 func (c *Cmd) Run(ctx context.Context) error {
-	cmd := c.baseCommand
+	cmd := c.BaseCommand
 	if cmd.SysProcAttr == nil {
 		cmd.SysProcAttr = &syscall.SysProcAttr{}
 	}

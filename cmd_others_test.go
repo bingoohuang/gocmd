@@ -1,21 +1,23 @@
+//go:build !windows
+
 package cmd_test
 
 import (
 	"bytes"
 	"context"
-	"io/ioutil"
+	"github.com/bingoohuang/cmd"
 	"os"
 	"os/exec"
+	"runtime"
 	"strings"
 	"syscall"
 	"testing"
 	"time"
 
-	"github.com/bingoohuang/cmd"
 	"github.com/stretchr/testify/assert"
 )
 
-func TestCommand_ExecuteStderr(t *testing.T) {
+func TestCommand_ExecuteStderr1(t *testing.T) {
 	c := cmd.New(">&2 echo hello")
 	err := c.Run(context.TODO())
 
@@ -23,7 +25,7 @@ func TestCommand_ExecuteStderr(t *testing.T) {
 	assert.Equal(t, "hello\n", c.Stderr())
 }
 
-func TestCommand_WithTimeout(t *testing.T) {
+func TestCommand_WithTimeout1(t *testing.T) {
 	c := cmd.New("sleep 0.1;", cmd.WithTimeout(1*time.Millisecond))
 	err := c.Run(context.TODO())
 
@@ -33,25 +35,27 @@ func TestCommand_WithTimeout(t *testing.T) {
 	assert.True(t, containsMsg)
 }
 
-func TestCommand_WithValidTimeout(t *testing.T) {
+func TestCommand_WithValidTimeout1(t *testing.T) {
 	c := cmd.New("sleep 0.01;", cmd.WithTimeout(500*time.Millisecond))
 	err := c.Run(context.TODO())
 	assert.Nil(t, err)
 }
 
 func TestCommand_WithWorkingDir(t *testing.T) {
-	setWorkingDir := func(c *Cmd) {
-		c.WorkingDir = "/tmp"
+	tempDir := os.TempDir()
+	setWorkingDir := func(c *cmd.Cmd) {
+		c.WorkingDir = tempDir
 	}
 
 	c := cmd.New("pwd", setWorkingDir)
 	c.Run(context.TODO())
 
-	assert.Equal(t, "/tmp\n", c.Stdout())
+	out := c.Stdout()
+	assert.True(t, strings.Contains(out, tempDir[:len(tempDir)-1]))
 }
 
 func TestCommand_WithStandardStreams(t *testing.T) {
-	tmpFile, _ := ioutil.TempFile("/tmp", "stdout_")
+	tmpFile, _ := os.CreateTemp("/tmp", "stdout_")
 	originalStdout := os.Stdout
 	os.Stdout = tmpFile
 
@@ -63,7 +67,7 @@ func TestCommand_WithStandardStreams(t *testing.T) {
 	c := cmd.New("echo hey", cmd.WithStdStreams())
 	c.Run(context.TODO())
 
-	r, err := ioutil.ReadFile(tmpFile.Name())
+	r, err := os.ReadFile(tmpFile.Name())
 	assert.Nil(t, err)
 	assert.Equal(t, "hey\n", string(r))
 }
@@ -93,7 +97,7 @@ func TestWithInheritedEnvironment(t *testing.T) {
 
 	c := cmd.New(
 		"echo $FROM_OS $OVERWRITE",
-		WithEnv(map[string]string{"OVERWRITE": "overwritten"}))
+		cmd.WithEnv(map[string]string{"OVERWRITE": "overwritten"}))
 	c.Run(context.TODO())
 
 	assertEqualWithLineBreak(t, "is on os overwritten", c.Stdout())
@@ -139,8 +143,8 @@ func TestCommand_WithContext(t *testing.T) {
 	// context takes precedence over timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	c = New("sleep 3;", cmd.WithTimeout(1*time.Second))
-	err = c.RunContext(ctx)
+	c = cmd.New("sleep 3;", cmd.WithTimeout(1*time.Second))
+	err = c.Run(ctx)
 	assert.NotNil(t, err)
 	assert.Equal(t, "context deadline exceeded", err.Error())
 }
@@ -158,9 +162,45 @@ func TestCommand_WithCustomBaseCommand(t *testing.T) {
 	assert.Equal(t, "/bin/bash\n", c.Stdout())
 }
 
-func TestCommand_WithUser(t *testing.T) {
-	cred := syscall.Credential{}
-	c := cmd.New("echo hello", cmd.WithUser(cred))
+func TestCommand_ExecuteStderr(t *testing.T) {
+	c := cmd.New(">&2 echo hello")
 	err := c.Run(context.TODO())
-	assert.Error(t, err)
+
+	assert.Nil(t, err)
+	assert.Equal(t, "hello\n", c.Stderr())
+}
+
+func TestCommand_WithTimeout(t *testing.T) {
+	c := cmd.New("sleep 0.5;", cmd.WithTimeout(5*time.Millisecond))
+	err := c.Run(context.TODO())
+
+	assert.NotNil(t, err)
+	assert.Equal(t, "timeout after 5ms", err.Error())
+}
+
+func TestCommand_WithValidTimeout(t *testing.T) {
+	c := cmd.New("sleep 0.01;", cmd.WithTimeout(500*time.Millisecond))
+	err := c.Run(context.TODO())
+
+	assert.Nil(t, err)
+}
+
+// I really don't see the point of mocking this
+// as the stdlib does so already. So testing here
+// seems redundant. This simple check if we're compliant
+// with an api changes
+func TestCommand_WithUser(t *testing.T) {
+	if runtime.GOOS == "linux" {
+		c := cmd.New("echo hello", cmd.WithUser(syscall.Credential{Uid: 1111}))
+		err := c.Run(context.TODO())
+		assert.Equal(t, uint32(1111), c.BaseCommand.SysProcAttr.Credential.Uid)
+		assert.Nil(t, err)
+	}
+
+	if runtime.GOOS == "darwin" {
+		cred := syscall.Credential{}
+		c := cmd.New("echo hello", cmd.WithUser(cred))
+		err := c.Run(context.TODO())
+		assert.Error(t, err)
+	}
 }
