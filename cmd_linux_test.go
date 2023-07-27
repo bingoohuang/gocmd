@@ -63,7 +63,7 @@ func TestCommand_WithStandardStreams(t *testing.T) {
 		os.Stdout = originalStdout
 	}()
 
-	cmd := New("echo hey", WithStdStreams)
+	cmd := New("echo hey", WithStdStreams())
 	cmd.Run()
 
 	r, err := ioutil.ReadFile(tmpFile.Name())
@@ -72,7 +72,7 @@ func TestCommand_WithStandardStreams(t *testing.T) {
 }
 
 func TestCommand_WithoutTimeout(t *testing.T) {
-	cmd := New("sleep 0.001; echo hello", WithoutTimeout)
+	cmd := New("sleep 0.001; echo hello", WithTimeout(0))
 
 	err := cmd.Run()
 
