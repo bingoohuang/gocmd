@@ -1,9 +1,9 @@
 package linestream_test
 
 import (
-	"github.com/bingoohuang/cmd/linestream"
 	"testing"
 
+	"github.com/bingoohuang/cmd/linestream"
 	"github.com/go-test/deep"
 )
 

@@ -16,7 +16,7 @@ func createBaseCommand(c *Cmd) *exec.Cmd {
 //
 //	token := syscall.Token(handle)
 //	c := New("echo hello", token)
-//	c.Run()
+//	c.Run(context.TODO())
 func WithUser(token syscall.Token) func(c *Cmd) {
 	return func(c *Cmd) {
 		c.baseCommand.SysProcAttr = &syscall.SysProcAttr{

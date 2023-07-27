@@ -1,28 +1,28 @@
-package cmd
+package cmd_test
 
 import (
+	"context"
 	"strings"
 	"syscall"
 	"testing"
 	"time"
 	"unsafe"
 
+	"github.com/bingoohuang/cmd"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCommand_ExecuteStderr(t *testing.T) {
-	cmd := New("echo hello 1>&2")
-
-	err := cmd.Run()
+	c := cmd.New("echo hello 1>&2")
+	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
-	assertEqualWithLineBreak(t, "hello ", cmd.Stderr())
+	assertEqualWithLineBreak(t, "hello ", c.Stderr())
 }
 
 func TestCommand_WithTimeout(t *testing.T) {
-	cmd := New("timeout 0.005;", WithTimeout(5*time.Millisecond))
-
-	err := cmd.Run()
+	c := cmd.New("timeout 0.005;", cmd.WithTimeout(5*time.Millisecond))
+	err := c.Run(context.TODO())
 
 	assert.NotNil(t, err)
 	// This is needed because windows sometimes can not kill the process :(
@@ -31,9 +31,8 @@ func TestCommand_WithTimeout(t *testing.T) {
 }
 
 func TestCommand_WithValidTimeout(t *testing.T) {
-	cmd := New("timeout 0.01;", WithTimeout(1000*time.Millisecond))
-
-	err := cmd.Run()
+	c := cmd.New("timeout 0.01;", cmd.WithTimeout(1000*time.Millisecond))
+	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
 }
@@ -41,7 +40,7 @@ func TestCommand_WithValidTimeout(t *testing.T) {
 func TestCommand_WithUser(t *testing.T) {
 	onehundred := 100
 	token := syscall.Token(uintptr(unsafe.Pointer(&onehundred)))
-	cmd := New("echo hello", WithUser(token))
-	err := cmd.Run()
+	c := cmd.New("echo hello", cmd.WithUser(token))
+	err := c.Run(context.TODO())
 	assert.Error(t, err)
 }

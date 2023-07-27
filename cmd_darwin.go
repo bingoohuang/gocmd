@@ -16,7 +16,7 @@ func createBaseCommand(c *Cmd) *exec.Cmd {
 //
 //	cred := syscall.Credential{Uid: 1000, Gid: 1000}
 //	c := New("echo hello", cred)
-//	c.Run()
+//	c.Run(context.TODO())
 func WithUser(credential syscall.Credential) func(c *Cmd) {
 	return func(c *Cmd) {
 		c.baseCommand.SysProcAttr = &syscall.SysProcAttr{

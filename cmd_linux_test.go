@@ -1,4 +1,4 @@
-package cmd
+package cmd_test
 
 import (
 	"bytes"
@@ -11,22 +11,21 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bingoohuang/cmd"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCommand_ExecuteStderr(t *testing.T) {
-	cmd := New(">&2 echo hello")
-
-	err := cmd.Run()
+	c := cmd.New(">&2 echo hello")
+	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
-	assert.Equal(t, "hello\n", cmd.Stderr())
+	assert.Equal(t, "hello\n", c.Stderr())
 }
 
 func TestCommand_WithTimeout(t *testing.T) {
-	cmd := New("sleep 0.1;", WithTimeout(1*time.Millisecond))
-
-	err := cmd.Run()
+	c := cmd.New("sleep 0.1;", cmd.WithTimeout(1*time.Millisecond))
+	err := c.Run(context.TODO())
 
 	assert.NotNil(t, err)
 	// Sadly a process can not be killed every time :(
@@ -35,10 +34,8 @@ func TestCommand_WithTimeout(t *testing.T) {
 }
 
 func TestCommand_WithValidTimeout(t *testing.T) {
-	cmd := New("sleep 0.01;", WithTimeout(500*time.Millisecond))
-
-	err := cmd.Run()
-
+	c := cmd.New("sleep 0.01;", cmd.WithTimeout(500*time.Millisecond))
+	err := c.Run(context.TODO())
 	assert.Nil(t, err)
 }
 
@@ -47,10 +44,10 @@ func TestCommand_WithWorkingDir(t *testing.T) {
 		c.WorkingDir = "/tmp"
 	}
 
-	cmd := New("pwd", setWorkingDir)
-	cmd.Run()
+	c := cmd.New("pwd", setWorkingDir)
+	c.Run(context.TODO())
 
-	assert.Equal(t, "/tmp\n", cmd.Stdout())
+	assert.Equal(t, "/tmp\n", c.Stdout())
 }
 
 func TestCommand_WithStandardStreams(t *testing.T) {
@@ -63,8 +60,8 @@ func TestCommand_WithStandardStreams(t *testing.T) {
 		os.Stdout = originalStdout
 	}()
 
-	cmd := New("echo hey", WithStdStreams())
-	cmd.Run()
+	c := cmd.New("echo hey", cmd.WithStdStreams())
+	c.Run(context.TODO())
 
 	r, err := ioutil.ReadFile(tmpFile.Name())
 	assert.Nil(t, err)
@@ -72,17 +69,16 @@ func TestCommand_WithStandardStreams(t *testing.T) {
 }
 
 func TestCommand_WithoutTimeout(t *testing.T) {
-	cmd := New("sleep 0.001; echo hello", WithTimeout(0))
-
-	err := cmd.Run()
+	c := cmd.New("sleep 0.001; echo hello", cmd.WithTimeout(0))
+	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
-	assert.Equal(t, "hello\n", cmd.Stdout())
+	assert.Equal(t, "hello\n", c.Stdout())
 }
 
 func TestCommand_WithInvalidDir(t *testing.T) {
-	cmd := New("echo hello", WithWorkingDir("/invalid"))
-	err := cmd.Run()
+	c := cmd.New("echo hello", cmd.WithWorkingDir("/invalid"))
+	err := c.Run(context.TODO())
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), ": no such file or directory"))
 }
@@ -95,18 +91,18 @@ func TestWithInheritedEnvironment(t *testing.T) {
 		os.Unsetenv("OVERWRITE")
 	}()
 
-	c := New(
+	c := cmd.New(
 		"echo $FROM_OS $OVERWRITE",
 		WithEnv(map[string]string{"OVERWRITE": "overwritten"}))
-	c.Run()
+	c.Run(context.TODO())
 
 	assertEqualWithLineBreak(t, "is on os overwritten", c.Stdout())
 }
 
 func TestWithCustomStderr(t *testing.T) {
 	writer := bytes.Buffer{}
-	c := New(">&2 echo StderrBuf; sleep 0.01; echo StdoutBuf;", WithStderr(&writer))
-	c.Run()
+	c := cmd.New(">&2 echo StderrBuf; sleep 0.01; echo StdoutBuf;", cmd.WithStderr(&writer))
+	c.Run(context.TODO())
 
 	assertEqualWithLineBreak(t, "StderrBuf", writer.String())
 	assertEqualWithLineBreak(t, "StdoutBuf", c.Stdout())
@@ -116,8 +112,8 @@ func TestWithCustomStderr(t *testing.T) {
 
 func TestWithCustomStdout(t *testing.T) {
 	writer := bytes.Buffer{}
-	c := New(">&2 echo StderrBuf; sleep 0.01; echo StdoutBuf;", WithStdout(&writer))
-	c.Run()
+	c := cmd.New(">&2 echo StderrBuf; sleep 0.01; echo StdoutBuf;", cmd.WithStdout(&writer))
+	c.Run(context.TODO())
 
 	assertEqualWithLineBreak(t, "StdoutBuf", writer.String())
 	assertEqualWithLineBreak(t, "StdoutBuf", c.Stdout())
@@ -126,16 +122,16 @@ func TestWithCustomStdout(t *testing.T) {
 }
 
 func TestWithEnvironmentVariables(t *testing.T) {
-	c := New("echo $env", WithEnv(map[string]string{"env": "value"}))
-	c.Run()
+	c := cmd.New("echo $Env", cmd.WithEnv(map[string]string{"Env": "value"}))
+	c.Run(context.TODO())
 
 	assertEqualWithLineBreak(t, "value", c.Stdout())
 }
 
 func TestCommand_WithContext(t *testing.T) {
 	// ensure legacy timeout is honored
-	cmd := New("sleep 3;", WithTimeout(1*time.Second))
-	err := cmd.Run()
+	c := cmd.New("sleep 3;", cmd.WithTimeout(1*time.Second))
+	err := c.Run(context.TODO())
 	assert.NotNil(t, err)
 	assert.Equal(t, "timeout after 1s", err.Error())
 
@@ -143,28 +139,28 @@ func TestCommand_WithContext(t *testing.T) {
 	// context takes precedence over timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	cmd = New("sleep 3;", WithTimeout(1*time.Second))
-	err = cmd.RunContext(ctx)
+	c = New("sleep 3;", cmd.WithTimeout(1*time.Second))
+	err = c.RunContext(ctx)
 	assert.NotNil(t, err)
 	assert.Equal(t, "context deadline exceeded", err.Error())
 }
 
 func TestCommand_WithCustomBaseCommand(t *testing.T) {
-	cmd := New(
+	c := cmd.New(
 		"echo $0",
-		WithBaseCommand(exec.Command("/bin/bash", "-c")),
+		cmd.WithBaseCommand(exec.Command("/bin/bash", "-c")),
 	)
 
-	err := cmd.Run()
+	err := c.Run(context.TODO())
 	assert.Nil(t, err)
 	// on darwin we use /bin/sh by default test if we're using bash
-	assert.NotEqual(t, "/bin/sh\n", cmd.Stdout())
-	assert.Equal(t, "/bin/bash\n", cmd.Stdout())
+	assert.NotEqual(t, "/bin/sh\n", c.Stdout())
+	assert.Equal(t, "/bin/bash\n", c.Stdout())
 }
 
 func TestCommand_WithUser(t *testing.T) {
 	cred := syscall.Credential{}
-	cmd := New("echo hello", WithUser(cred))
-	err := cmd.Run()
+	c := cmd.New("echo hello", cmd.WithUser(cred))
+	err := c.Run(context.TODO())
 	assert.Error(t, err)
 }

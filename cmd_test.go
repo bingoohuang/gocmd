@@ -1,41 +1,43 @@
-package cmd
+package cmd_test
 
 import (
 	"bytes"
+	"context"
 	"fmt"
 	"os"
 	"runtime"
 	"testing"
 	"time"
 
+	"github.com/bingoohuang/cmd"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCommand_NewCommand(t *testing.T) {
-	cmd := New("echo hello")
-	cmd.Run()
+	c := cmd.New("echo hello")
+	c.Run(context.TODO())
 
-	assertEqualWithLineBreak(t, "hello", cmd.Combined())
-	assertEqualWithLineBreak(t, "hello", cmd.Stdout())
+	assertEqualWithLineBreak(t, "hello", c.Combined())
+	assertEqualWithLineBreak(t, "hello", c.Stdout())
 }
 
 func TestCommand_Execute(t *testing.T) {
-	cmd := New("echo hello")
+	c := cmd.New("echo hello")
 
-	err := cmd.Run()
+	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
-	assert.True(t, cmd.Executed)
-	assertEqualWithLineBreak(t, "hello", cmd.Stdout())
+	assert.True(t, c.Executed)
+	assertEqualWithLineBreak(t, "hello", c.Stdout())
 }
 
 func TestCommand_ExitCode(t *testing.T) {
-	cmd := New("exit 120")
+	c := cmd.New("exit 120")
 
-	err := cmd.Run()
+	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
-	assert.Equal(t, 120, cmd.ExitCode())
+	assert.Equal(t, 120, c.ExitCode())
 }
 
 func TestCommand_WithEnvVariables(t *testing.T) {
@@ -43,12 +45,12 @@ func TestCommand_WithEnvVariables(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		envVar = "%TEST%"
 	}
-	cmd := New(fmt.Sprintf("echo %s", envVar))
-	cmd.env = []string{"TEST=hey"}
+	c := cmd.New(fmt.Sprintf("echo %s", envVar))
+	c.Env = []string{"TEST=hey"}
 
-	_ = cmd.Run()
+	_ = c.Run(context.TODO())
 
-	assertEqualWithLineBreak(t, "hey", cmd.Stdout())
+	assertEqualWithLineBreak(t, "hey", c.Stdout())
 }
 
 func TestCommand_Executed(t *testing.T) {
@@ -60,14 +62,14 @@ func TestCommand_Executed(t *testing.T) {
 		assert.NotNil(t, r)
 	}()
 
-	c := New("echo will not be Executed")
+	c := cmd.New("echo will not be Executed")
 	_ = c.Stdout()
 }
 
 func TestCommand_AddEnv(t *testing.T) {
-	c := New("echo test", WithoutEnv())
+	c := cmd.New("echo test", cmd.WithoutEnv())
 	c.AddEnv("key", "value")
-	assert.Equal(t, []string{"key=value"}, c.env)
+	assert.Equal(t, []string{"key=value"}, c.Env)
 }
 
 func TestCommand_AddEnvWithShellVariable(t *testing.T) {
@@ -75,10 +77,10 @@ func TestCommand_AddEnvWithShellVariable(t *testing.T) {
 	os.Setenv(TestEnvKey, "test from shell")
 	defer os.Unsetenv(TestEnvKey)
 
-	c := New(getCommand())
+	c := cmd.New(getCommand())
 	c.AddEnv("SOME_KEY", fmt.Sprintf("${%s}", TestEnvKey))
 
-	err := c.Run()
+	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
 	assertEqualWithLineBreak(t, "test from shell", c.Stdout())
@@ -94,11 +96,11 @@ func TestCommand_AddMultipleEnvWithShellVariable(t *testing.T) {
 		os.Unsetenv(TestEnvKeyName)
 	}()
 
-	c := New(getCommand())
+	c := cmd.New(getCommand())
 	envValue := fmt.Sprintf("Hello ${%s}, I am ${%s}", TestEnvKeyPlanet, TestEnvKeyName)
 	c.AddEnv("SOME_KEY", envValue)
 
-	err := c.Run()
+	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
 	assertEqualWithLineBreak(t, "Hello world, I am Simon", c.Stdout())
@@ -115,15 +117,15 @@ func getCommand() string {
 func TestCommand_SetOptions(t *testing.T) {
 	writer := &bytes.Buffer{}
 
-	setWriter := func(c *Cmd) {
-		c.stdoutWriter = writer
+	setWriter := func(c *cmd.Cmd) {
+		c.StdoutWriter = writer
 	}
-	setTimeout := func(c *Cmd) {
+	setTimeout := func(c *cmd.Cmd) {
 		c.Timeout = 1 * time.Second
 	}
 
-	c := New("echo test", setTimeout, setWriter)
-	err := c.Run()
+	c := cmd.New("echo test", setTimeout, setWriter)
+	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
 	assert.Equal(t, time.Duration(1000000000), c.Timeout)
@@ -132,9 +134,9 @@ func TestCommand_SetOptions(t *testing.T) {
 
 func assertEqualWithLineBreak(t *testing.T, expected string, actual string) {
 	if runtime.GOOS == "windows" {
-		expected = expected + "\r\n"
+		expected += "\r\n"
 	} else {
-		expected = expected + "\n"
+		expected += "\n"
 	}
 
 	assert.Equal(t, expected, actual)

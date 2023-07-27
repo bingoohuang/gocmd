@@ -11,7 +11,7 @@ A simple package to execute shell commands on linux, darwin and windows.
 ```go
 c := cmd.New("echo hello")
 
-err := c.Run()
+err := c.Run(context.TODO())
 if err != nil {
     panic(err.Error())
 }
@@ -46,7 +46,7 @@ c := cmd.New("echo hello",
 	cmd.WithStdout(linestream.New(func(line string) {
 	    fmt.Println(line)
     })))
-c.Run()
+c.Run(context.TODO())
 ```
 
 ## resources

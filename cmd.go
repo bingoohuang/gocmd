@@ -18,29 +18,30 @@ import (
 
 // Cmd represents a single command which can be Executed
 type Cmd struct {
-	Command      string
-	env          []string
-	Dir          string
-	Timeout      time.Duration
 	stderrWriter io.Writer
-	stdoutWriter io.Writer
-	WorkingDir   string
+	StdoutWriter io.Writer
 	baseCommand  *exec.Cmd
-	Executed     bool
-	exitCode     int
+	Dir          string
+	Command      string
+	WorkingDir   string
+	Env          []string
 
 	// StdoutBuf and StdoutBuf retrieve the output after the command was Executed
 	StdoutBuf   bytes.Buffer
-	StderrBuf   bytes.Buffer
 	CombinedBuf bytes.Buffer
+	StderrBuf   bytes.Buffer
+	Timeout     time.Duration
+	exitCode    int
+
+	Executed bool
 }
 
-// EnvVars represents a map where the key is the name of the env variable
+// EnvVars represents a map where the key is the name of the Env variable
 // and the value is the value of the variable
 //
 // Example:
 //
-//	env := map[string]string{"ENV": "VALUE"}
+//	Env := map[string]string{"ENV": "VALUE"}
 type EnvVars map[string]string
 
 // New creates a new command
@@ -52,20 +53,20 @@ type EnvVars map[string]string
 //	     c := cmd.New("echo hello", function (c *Cmd) {
 //			    c.WorkingDir = "/tmp"
 //	     })
-//	     c.Run()
+//	     c.Run(context.TODO())
 //
 // or you can use existing options functions
 //
 //	c := cmd.New("echo hello", cmd.WithStdStreams)
-//	c.Run()
+//	c.Run(context.TODO())
 func New(cmd string, options ...func(*Cmd)) *Cmd {
 	c := &Cmd{
 		Command: cmd,
 		Timeout: 1 * time.Minute,
 	}
-	c.env = append(c.env, os.Environ()...)
+	c.Env = append(c.Env, os.Environ()...)
 	c.baseCommand = createBaseCommand(c)
-	c.stdoutWriter = io.MultiWriter(&c.StdoutBuf, &c.CombinedBuf)
+	c.StdoutWriter = io.MultiWriter(&c.StdoutBuf, &c.CombinedBuf)
 	c.stderrWriter = io.MultiWriter(&c.StderrBuf, &c.CombinedBuf)
 
 	for _, o := range options {
@@ -73,6 +74,20 @@ func New(cmd string, options ...func(*Cmd)) *Cmd {
 	}
 
 	return c
+}
+
+// Run directly runs a new command
+func Run(cmd string, options ...func(*Cmd)) (string, error) {
+	c := New(cmd, options...)
+	if err := c.Run(context.Background()); err != nil {
+		return "", err
+	}
+
+	if stderr := c.Stderr(); stderr != "" {
+		return "", errors.New(stderr)
+	}
+
+	return c.Stdout(), nil
 }
 
 // WithBaseCommand allows the OS specific generated baseCommand
@@ -84,7 +99,7 @@ func New(cmd string, options ...func(*Cmd)) *Cmd {
 //	  "echo hello",
 //	  cmd.WithBaseCommand(exec.Cmd("/bin/bash", "-c")),
 //	)
-//	c.Run()
+//	c.Run(context.TODO())
 func WithBaseCommand(baseCommand *exec.Cmd) func(c *Cmd) {
 	return func(c *Cmd) {
 		baseCommand.Args = append(baseCommand.Args, c.Command)
@@ -98,10 +113,10 @@ func WithBaseCommand(baseCommand *exec.Cmd) func(c *Cmd) {
 // Example:
 //
 //	c := cmd.New("echo hello", cmd.WithStdStreams())
-//	c.Run()
+//	c.Run(context.TODO())
 func WithStdStreams() func(c *Cmd) {
 	return func(c *Cmd) {
-		c.stdoutWriter = io.MultiWriter(os.Stdout, &c.StdoutBuf, &c.CombinedBuf)
+		c.StdoutWriter = io.MultiWriter(os.Stdout, &c.StdoutBuf, &c.CombinedBuf)
 		c.stderrWriter = io.MultiWriter(os.Stderr, &c.StderrBuf, &c.CombinedBuf)
 	}
 }
@@ -112,7 +127,7 @@ func WithStdout(writers ...io.Writer) func(c *Cmd) {
 		var allWriters []io.Writer
 		allWriters = append(allWriters, &c.StdoutBuf, &c.CombinedBuf)
 		allWriters = append(allWriters, writers...)
-		c.stdoutWriter = io.MultiWriter(allWriters...)
+		c.StdoutWriter = io.MultiWriter(allWriters...)
 	}
 }
 
@@ -156,15 +171,15 @@ func WithEnv(env EnvVars) func(c *Cmd) {
 // WithoutEnv clears environment variables for the Executed command
 func WithoutEnv() func(c *Cmd) {
 	return func(c *Cmd) {
-		c.env = nil
+		c.Env = nil
 	}
 }
 
 // AddEnv adds an environment variable to the command
-// If a variable gets passed like ${VAR_NAME} the env variable will be read out by the current shell
+// If a variable gets passed like ${VAR_NAME} the Env variable will be read out by the current shell
 func (c *Cmd) AddEnv(key, value string) {
 	value = os.ExpandEnv(value)
-	c.env = append(c.env, fmt.Sprintf("%s=%s", key, value))
+	c.Env = append(c.Env, fmt.Sprintf("%s=%s", key, value))
 }
 
 // Stdout returns the output to StdoutBuf
@@ -199,17 +214,17 @@ func (c *Cmd) checkExecuted(property string) {
 	panic("Can not read " + property + " if command was not Executed.")
 }
 
-// RunContext runs Run but with Context
-func (c *Cmd) RunContext(ctx context.Context) error {
+// Run runs with Context
+func (c *Cmd) Run(ctx context.Context) error {
 	cmd := c.baseCommand
 	if cmd.SysProcAttr == nil {
 		cmd.SysProcAttr = &syscall.SysProcAttr{}
 	}
 
 	cmd.SysProcAttr.Setpgid = true // // 设置进程组
-	cmd.Env = c.env
+	cmd.Env = c.Env
 	cmd.Dir = c.Dir
-	cmd.Stdout = c.stdoutWriter
+	cmd.Stdout = c.StdoutWriter
 	cmd.Stderr = c.stderrWriter
 	cmd.Dir = c.WorkingDir
 
@@ -230,8 +245,10 @@ func (c *Cmd) RunContext(ctx context.Context) error {
 		c.Executed = true
 	}()
 
-	done := make(chan error, 1)
-	go func() { done <- cmd.Wait() }()
+	done := make(chan error)
+	go func() {
+		done <- cmd.Wait()
+	}()
 
 	select {
 	case <-ctx.Done():
@@ -251,12 +268,6 @@ func (c *Cmd) RunContext(ctx context.Context) error {
 		c.getExitCode(err)
 		return nil
 	}
-}
-
-// Run executes the command and writes the results into its own instance
-// The results can be received with the Stdout(), Stderr() and ExitCode() methods
-func (c *Cmd) Run() error {
-	return c.RunContext(context.Background())
 }
 
 func (c *Cmd) getExitCode(err error) {

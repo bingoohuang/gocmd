@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"context"
 	"syscall"
 	"testing"
 	"time"
@@ -11,7 +12,7 @@ import (
 func TestCommand_ExecuteStderr(t *testing.T) {
 	cmd := New(">&2 echo hello")
 
-	err := cmd.Run()
+	err := cmd.Run(context.TODO())
 
 	assert.Nil(t, err)
 	assert.Equal(t, "hello\n", cmd.Stderr())
@@ -20,7 +21,7 @@ func TestCommand_ExecuteStderr(t *testing.T) {
 func TestCommand_WithTimeout(t *testing.T) {
 	cmd := New("sleep 0.5;", WithTimeout(5*time.Millisecond))
 
-	err := cmd.Run()
+	err := cmd.Run(context.TODO())
 
 	assert.NotNil(t, err)
 	assert.Equal(t, "timeout after 5ms", err.Error())
@@ -29,7 +30,7 @@ func TestCommand_WithTimeout(t *testing.T) {
 func TestCommand_WithValidTimeout(t *testing.T) {
 	cmd := New("sleep 0.01;", WithTimeout(500*time.Millisecond))
 
-	err := cmd.Run()
+	err := cmd.Run(context.TODO())
 
 	assert.Nil(t, err)
 }
@@ -40,7 +41,7 @@ func TestCommand_WithValidTimeout(t *testing.T) {
 // with an api changes
 func TestCommand_WithUser(t *testing.T) {
 	cmd := New("echo hello", WithUser(syscall.Credential{Uid: 1111}))
-	err := cmd.Run()
+	err := cmd.Run(context.TODO())
 	assert.Equal(t, uint32(1111), cmd.baseCommand.SysProcAttr.Credential.Uid)
 	assert.Error(t, err)
 }

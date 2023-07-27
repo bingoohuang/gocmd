@@ -45,8 +45,8 @@ import (
 // channel size being zero.
 type LineStream struct {
 	lineProcessor LineProcessor
-	bufSize       int
 	buf           []byte
+	bufSize       int
 	lastChar      int
 }
 
