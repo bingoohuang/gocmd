@@ -9,13 +9,9 @@ import (
 
 func TestStreamingMultipleLines(t *testing.T) {
 	lines := make(chan string, 5)
-	out := linestream.New(lines)
-
-	// Quick side test: Lines() chan string should be the same chan string
-	// we created the object with
-	if out.Lines() != lines {
-		t.Errorf("Lines() does not return the given string chan")
-	}
+	out := linestream.New(func(line string) {
+		lines <- line
+	})
 
 	// Write two short lines
 	input := "foo\nbar\n"
@@ -56,7 +52,9 @@ func TestStreamingMultipleLines(t *testing.T) {
 
 func TestStreamingBlankLines(t *testing.T) { // nolint funlen
 	lines := make(chan string, 5)
-	out := linestream.New(lines)
+	out := linestream.New(func(line string) {
+		lines <- line
+	})
 
 	// Blank line in the middle
 	input := "foo\n\nbar\n"
@@ -146,7 +144,9 @@ LINES3:
 func TestStreamingCarriageReturn(t *testing.T) {
 	// Carriage return should be stripped
 	lines := make(chan string, 5)
-	out := linestream.New(lines)
+	out := linestream.New(func(line string) {
+		lines <- line
+	})
 
 	input := "foo\r\nbar\r\n"
 	expectLines := []string{"foo", "bar"}
@@ -183,7 +183,9 @@ func TestStreamingLineBuffering(t *testing.T) {
 	// write. When line is later terminated with newline, we prepend the buffered
 	// line and send the complete line.
 	lines := make(chan string, 1)
-	out := linestream.New(lines)
+	out := linestream.New(func(line string) {
+		lines <- line
+	})
 
 	// Write 3 unterminated lines. Without a newline, they'll be buffered until...
 	for i := 0; i < 3; i++ {
@@ -250,7 +252,9 @@ func TestStreamingErrLineBufferOverflow1(t *testing.T) { // nolint funlen
 	longLine[linestream.DefaultLineBufferSize+1] = 'z'
 
 	lines := make(chan string, 5)
-	out := linestream.New(lines)
+	out := linestream.New(func(line string) {
+		lines <- line
+	})
 
 	// Write the long line, it should only write (n) 3 bytes for "bc\n"
 	n, err := out.Write(longLine)
@@ -319,7 +323,9 @@ func TestStreamingErrLineBufferOverflow2(t *testing.T) {
 	// Overflow line buffer on 2nd write. So first write puts something in the
 	// buffer, and then 2nd overflows it instead of completing the line.
 	lines := make(chan string, 1)
-	out := linestream.New(lines)
+	out := linestream.New(func(line string) {
+		lines <- line
+	})
 
 	// Get "bar" into the buffer by omitting its newline
 	input := "foo\nbar"
@@ -388,7 +394,9 @@ func TestStreamingSetLineBufferSize(t *testing.T) {
 	longLine[linestream.DefaultLineBufferSize+1] = '\n'
 
 	lines := make(chan string, 5)
-	out := linestream.New(lines)
+	out := linestream.New(func(line string) {
+		lines <- line
+	})
 	out.SetLineBufferSize(linestream.DefaultLineBufferSize * 2)
 
 	n, err := out.Write(longLine)

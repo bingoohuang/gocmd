@@ -44,21 +44,23 @@ import (
 // all lines have been sent and received are the command finishing and the
 // channel size being zero.
 type LineStream struct {
-	lineChan chan string
-	bufSize  int
-	buf      []byte
-	lastChar int
+	lineProcessor LineProcessor
+	bufSize       int
+	buf           []byte
+	lastChar      int
 }
+
+type LineProcessor func(line string)
 
 // New creates a new streaming output on the given channel. The
 // caller must begin receiving on the channel before the command is started.
 // The LineStream never closes the channel.
-func New(lineChan chan string) *LineStream {
+func New(lineProcessor LineProcessor) *LineStream {
 	out := &LineStream{
-		lineChan: lineChan,
-		bufSize:  DefaultLineBufferSize,
-		buf:      make([]byte, DefaultLineBufferSize),
-		lastChar: 0,
+		lineProcessor: lineProcessor,
+		bufSize:       DefaultLineBufferSize,
+		buf:           make([]byte, DefaultLineBufferSize),
+		lastChar:      0,
 	}
 
 	return out
@@ -95,7 +97,7 @@ LINES:
 			rw.lastChar = 0 // reset buffer
 		}
 		line += string(p[firstCharPos:lastChar])
-		rw.lineChan <- line // blocks if chan full
+		rw.lineProcessor(line) // blocks if chan full
 
 		// Next line offset is the first byte (+1) after the newline (i)
 		firstCharPos += newlineOffset + 1
@@ -128,10 +130,6 @@ LINES:
 
 	return n, err // implicit
 }
-
-// Lines returns the channel to which lines are sent. This is the same channel
-// passed to New.
-func (rw *LineStream) Lines() <-chan string { return rw.lineChan }
 
 // SetLineBufferSize sets the internal line buffer size. The default is DEFAULT_LINE_BUFFER_SIZE.
 // This function must be called immediately after New, and it is not
