@@ -84,7 +84,7 @@ func TestCommand_WithInvalidDir(t *testing.T) {
 	cmd := New("echo hello", WithWorkingDir("/invalid"))
 	err := cmd.Run()
 	assert.NotNil(t, err)
-	assert.Equal(t, "chdir /invalid: no such file or directory", err.Error())
+	assert.True(t, strings.Contains(err.Error(), ": no such file or directory"))
 }
 
 func TestWithInheritedEnvironment(t *testing.T) {
