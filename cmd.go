@@ -99,7 +99,7 @@ func WithBaseCommand(baseCommand *exec.Cmd) func(c *Cmd) {
 //
 //	c := cmd.New("echo hello", cmd.WithStdStreams())
 //	c.Run()
-func WithStdStreams(c *Cmd) func(c *Cmd) {
+func WithStdStreams() func(c *Cmd) {
 	return func(c *Cmd) {
 		c.stdoutWriter = io.MultiWriter(os.Stdout, &c.StdoutBuf, &c.CombinedBuf)
 		c.stderrWriter = io.MultiWriter(os.Stderr, &c.StderrBuf, &c.CombinedBuf)
