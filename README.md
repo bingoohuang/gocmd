@@ -12,15 +12,17 @@ A simple package to execute shell commands on linux, darwin and windows.
 c := cmd.New("echo hello")
 
 err := c.Run(context.TODO())
-if err != nil {
-    panic(err.Error())
-}
 
 fmt.Println(c.Stdout())
 fmt.Println(c.Stderr())
 ```
 
-### Configure the command
+execute shell file with arguments
+
+shellCmd, err := shellquote.Quote("a.sh", "arg1", "args")
+c := cmd.New(shellCmd)
+
+## Configure the command
 
 To configure the command an option function can be passed which receives the
 command object as an argument passed by reference.

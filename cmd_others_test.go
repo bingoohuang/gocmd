@@ -5,7 +5,6 @@ package cmd_test
 import (
 	"bytes"
 	"context"
-	"github.com/bingoohuang/cmd"
 	"os"
 	"os/exec"
 	"runtime"
@@ -14,6 +13,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/bingoohuang/cmd"
 	"github.com/stretchr/testify/assert"
 )
 
