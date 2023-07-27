@@ -206,8 +206,7 @@ func (c *Cmd) RunContext(ctx context.Context) error {
 		cmd.SysProcAttr = &syscall.SysProcAttr{}
 	}
 
-	// 设置进程组
-	cmd.SysProcAttr.Setpgid = true
+	cmd.SysProcAttr.Setpgid = true // // 设置进程组
 	cmd.Env = c.env
 	cmd.Dir = c.Dir
 	cmd.Stdout = c.stdoutWriter

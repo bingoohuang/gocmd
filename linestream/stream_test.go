@@ -1,15 +1,15 @@
-package cmd_test
+package linestream_test
 
 import (
+	"github.com/bingoohuang/cmd/linestream"
 	"testing"
 
-	"github.com/bingoohuang/cmd"
 	"github.com/go-test/deep"
 )
 
 func TestStreamingMultipleLines(t *testing.T) {
 	lines := make(chan string, 5)
-	out := cmd.NewOutputStream(lines)
+	out := linestream.New(lines)
 
 	// Quick side test: Lines() chan string should be the same chan string
 	// we created the object with
@@ -56,7 +56,7 @@ func TestStreamingMultipleLines(t *testing.T) {
 
 func TestStreamingBlankLines(t *testing.T) { // nolint funlen
 	lines := make(chan string, 5)
-	out := cmd.NewOutputStream(lines)
+	out := linestream.New(lines)
 
 	// Blank line in the middle
 	input := "foo\n\nbar\n"
@@ -146,7 +146,7 @@ LINES3:
 func TestStreamingCarriageReturn(t *testing.T) {
 	// Carriage return should be stripped
 	lines := make(chan string, 5)
-	out := cmd.NewOutputStream(lines)
+	out := linestream.New(lines)
 
 	input := "foo\r\nbar\r\n"
 	expectLines := []string{"foo", "bar"}
@@ -183,7 +183,7 @@ func TestStreamingLineBuffering(t *testing.T) {
 	// write. When line is later terminated with newline, we prepend the buffered
 	// line and send the complete line.
 	lines := make(chan string, 1)
-	out := cmd.NewOutputStream(lines)
+	out := linestream.New(lines)
 
 	// Write 3 unterminated lines. Without a newline, they'll be buffered until...
 	for i := 0; i < 3; i++ {
@@ -236,21 +236,21 @@ func TestStreamingErrLineBufferOverflow1(t *testing.T) { // nolint funlen
 	// Overflow the line buffer in 1 write. The first line "bc" is sent,
 	// but the remaining line can't be buffered because it's +2 bytes larger
 	// than the line buffer.
-	longLine := make([]byte, 3+cmd.DefaultLineBufferSize+2) // "bc\nAAA...zz"
+	longLine := make([]byte, 3+linestream.DefaultLineBufferSize+2) // "bc\nAAA...zz"
 	longLine[0] = 'b'
 	longLine[1] = 'c'
 	longLine[2] = '\n'
 
-	for i := 3; i < cmd.DefaultLineBufferSize; i++ {
+	for i := 3; i < linestream.DefaultLineBufferSize; i++ {
 		longLine[i] = 'A'
 	}
 
 	// These 2 chars cause ErrLineBufferOverflow:
-	longLine[cmd.DefaultLineBufferSize] = 'z'
-	longLine[cmd.DefaultLineBufferSize+1] = 'z'
+	longLine[linestream.DefaultLineBufferSize] = 'z'
+	longLine[linestream.DefaultLineBufferSize+1] = 'z'
 
 	lines := make(chan string, 5)
-	out := cmd.NewOutputStream(lines)
+	out := linestream.New(lines)
 
 	// Write the long line, it should only write (n) 3 bytes for "bc\n"
 	n, err := out.Write(longLine)
@@ -260,13 +260,13 @@ func TestStreamingErrLineBufferOverflow1(t *testing.T) { // nolint funlen
 	}
 
 	switch errt := err.(type) {
-	case cmd.ErrLineBufferOverflow:
-		if errt.BufferSize != cmd.DefaultLineBufferSize {
-			t.Errorf("ErrLineBufferOverflow.BufferSize = %d, expected %d", errt.BufferSize, cmd.DefaultLineBufferSize)
+	case linestream.ErrLineBufferOverflow:
+		if errt.BufferSize != linestream.DefaultLineBufferSize {
+			t.Errorf("ErrLineBufferOverflow.BufferSize = %d, expected %d", errt.BufferSize, linestream.DefaultLineBufferSize)
 		}
 
-		if errt.BufferFree != cmd.DefaultLineBufferSize {
-			t.Errorf("ErrLineBufferOverflow.BufferFree = %d, expected %d", errt.BufferFree, cmd.DefaultLineBufferSize)
+		if errt.BufferFree != linestream.DefaultLineBufferSize {
+			t.Errorf("ErrLineBufferOverflow.BufferFree = %d, expected %d", errt.BufferFree, linestream.DefaultLineBufferSize)
 		}
 
 		if errt.Line != string(longLine[3:]) {
@@ -277,7 +277,7 @@ func TestStreamingErrLineBufferOverflow1(t *testing.T) { // nolint funlen
 			t.Errorf("ErrLineBufferOverflow.Error() string is empty, expected something")
 		}
 	default:
-		t.Errorf("got err '%v', expected cmd.ErrLineBufferOverflow", err)
+		t.Errorf("got err '%v', expected linestream.ErrLineBufferOverflow", err)
 	}
 
 	// "bc" should be sent before the overflow error
@@ -319,7 +319,7 @@ func TestStreamingErrLineBufferOverflow2(t *testing.T) {
 	// Overflow line buffer on 2nd write. So first write puts something in the
 	// buffer, and then 2nd overflows it instead of completing the line.
 	lines := make(chan string, 1)
-	out := cmd.NewOutputStream(lines)
+	out := linestream.New(lines)
 
 	// Get "bar" into the buffer by omitting its newline
 	input := "foo\nbar"
@@ -345,8 +345,8 @@ func TestStreamingErrLineBufferOverflow2(t *testing.T) {
 	}
 
 	// Buffer contains "bar", now wverflow it on 2nd write
-	longLine := make([]byte, cmd.DefaultLineBufferSize)
-	for i := 0; i < cmd.DefaultLineBufferSize; i++ {
+	longLine := make([]byte, linestream.DefaultLineBufferSize)
+	for i := 0; i < linestream.DefaultLineBufferSize; i++ {
 		longLine[i] = 'X'
 	}
 
@@ -356,10 +356,10 @@ func TestStreamingErrLineBufferOverflow2(t *testing.T) {
 	}
 
 	switch errt := err.(type) {
-	case cmd.ErrLineBufferOverflow:
+	case linestream.ErrLineBufferOverflow:
 		// Buffer has "bar" so it's free is total - 3
-		if errt.BufferFree != cmd.DefaultLineBufferSize-3 {
-			t.Errorf("ErrLineBufferOverflow.BufferFree = %d, expected %d", errt.BufferFree, cmd.DefaultLineBufferSize)
+		if errt.BufferFree != linestream.DefaultLineBufferSize-3 {
+			t.Errorf("ErrLineBufferOverflow.BufferFree = %d, expected %d", errt.BufferFree, linestream.DefaultLineBufferSize)
 		}
 		// Up to but not include "bc\n" because it should have been truncated
 		expectLine := "bar" + string(longLine)
@@ -367,29 +367,29 @@ func TestStreamingErrLineBufferOverflow2(t *testing.T) {
 			t.Errorf("ErrLineBufferOverflow.Line = '%s', expected '%s'", errt.Line, expectLine)
 		}
 	default:
-		t.Errorf("got err '%v', expected cmd.ErrLineBufferOverflow", err)
+		t.Errorf("got err '%v', expected linestream.ErrLineBufferOverflow", err)
 	}
 }
 
 func TestStreamingSetLineBufferSize(t *testing.T) {
-	// Same overflow as TestStreamingErrLineBufferOverflow1 but before we use
+	// Same overflow as TestStreamingErrLineBufferOverflow1, but before we use
 	// stream output, we'll increase buffer size by calling SetLineBufferSize
 	// which should prevent the overflow
-	longLine := make([]byte, 3+cmd.DefaultLineBufferSize+2) // "bc\nAAA...z\n"
+	longLine := make([]byte, 3+linestream.DefaultLineBufferSize+2) // "bc\nAAA...z\n"
 	longLine[0] = 'b'
 	longLine[1] = 'c'
 	longLine[2] = '\n'
 
-	for i := 3; i < cmd.DefaultLineBufferSize; i++ {
+	for i := 3; i < linestream.DefaultLineBufferSize; i++ {
 		longLine[i] = 'A'
 	}
 
-	longLine[cmd.DefaultLineBufferSize] = 'z'
-	longLine[cmd.DefaultLineBufferSize+1] = '\n'
+	longLine[linestream.DefaultLineBufferSize] = 'z'
+	longLine[linestream.DefaultLineBufferSize+1] = '\n'
 
 	lines := make(chan string, 5)
-	out := cmd.NewOutputStream(lines)
-	out.SetLineBufferSize(cmd.DefaultLineBufferSize * 2)
+	out := linestream.New(lines)
+	out.SetLineBufferSize(linestream.DefaultLineBufferSize * 2)
 
 	n, err := out.Write(longLine)
 	if err != nil {
@@ -419,7 +419,7 @@ func TestStreamingSetLineBufferSize(t *testing.T) {
 		t.Fatal("blocked on <-lines")
 	}
 
-	expectLine := string(longLine[3 : cmd.DefaultLineBufferSize+1]) // not newline
+	expectLine := string(longLine[3 : linestream.DefaultLineBufferSize+1]) // not newline
 
 	if gotLine != expectLine {
 		t.Errorf("got line: '%s', expected '%s'", gotLine, expectLine)

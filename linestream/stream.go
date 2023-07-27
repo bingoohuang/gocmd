@@ -1,22 +1,22 @@
-package cmd
+package linestream
 
 import (
 	"bytes"
 	"fmt"
 )
 
-// OutputStream represents real time, line by line output from a running Cmd.
+// LineStream represents real time, line by line output from a running Cmd.
 // Lines are terminated by a single newline preceded by an optional carriage
 // return. Both newline and carriage return are stripped from the line when
 // sent to a caller-provided channel.
 //
 // The caller must begin receiving before starting the Cmd. Write blocks on the
 // channel; the caller must always read the channel. The channel is not closed
-// by the OutputStream.
+// by the LineStream.
 //
-// A Cmd in this package uses an OutputStream for both STDOUT and STDERR when
+// A Cmd in this package uses an LineStream for both STDOUT and STDERR when
 // created by calling NewCmdOptions and Options.Streaming is true. To use
-// OutputStream directly with a Go standard library os/exec.Command:
+// LineStream directly with a Go standard library os/exec.Command:
 //
 //	import "os/exec"
 //	import "github.com/gobars/cmd"
@@ -29,7 +29,7 @@ import (
 //	}()
 //
 //	runnableCmd := exec.Command(...)
-//	stdout := cmd.NewOutputStream(stdoutChan)
+//	stdout := cmd.New(stdoutChan)
 //	runnableCmd.Stdout = stdout
 //
 // While runnableCmd is running, lines are sent to the channel as soon as they
@@ -40,21 +40,21 @@ import (
 //	    time.Sleep(10 * time.Millisecond)
 //	}
 //
-// Since the channel is not closed by the OutputStream, the two indications that
+// Since the channel is not closed by the LineStream, the two indications that
 // all lines have been sent and received are the command finishing and the
 // channel size being zero.
-type OutputStream struct {
+type LineStream struct {
 	lineChan chan string
 	bufSize  int
 	buf      []byte
 	lastChar int
 }
 
-// NewOutputStream creates a new streaming output on the given channel. The
+// New creates a new streaming output on the given channel. The
 // caller must begin receiving on the channel before the command is started.
-// The OutputStream never closes the channel.
-func NewOutputStream(lineChan chan string) *OutputStream {
-	out := &OutputStream{
+// The LineStream never closes the channel.
+func New(lineChan chan string) *LineStream {
+	out := &LineStream{
 		lineChan: lineChan,
 		bufSize:  DefaultLineBufferSize,
 		buf:      make([]byte, DefaultLineBufferSize),
@@ -64,9 +64,9 @@ func NewOutputStream(lineChan chan string) *OutputStream {
 	return out
 }
 
-// Write makes OutputStream implement the io.Writer interface. Do not call
+// Write makes LineStream implement the io.Writer interface. Do not call
 // this function directly.
-func (rw *OutputStream) Write(p []byte) (n int, err error) {
+func (rw *LineStream) Write(p []byte) (n int, err error) {
 	n = len(p) // end of buffer
 	firstCharPos := 0
 
@@ -130,34 +130,28 @@ LINES:
 }
 
 // Lines returns the channel to which lines are sent. This is the same channel
-// passed to NewOutputStream.
-func (rw *OutputStream) Lines() <-chan string { return rw.lineChan }
+// passed to New.
+func (rw *LineStream) Lines() <-chan string { return rw.lineChan }
 
 // SetLineBufferSize sets the internal line buffer size. The default is DEFAULT_LINE_BUFFER_SIZE.
-// This function must be called immediately after NewOutputStream, and it is not
+// This function must be called immediately after New, and it is not
 // safe to call by multiple goroutines.
 //
 // Increasing the line buffer size can help reduce ErrLineBufferOverflow errors.
-func (rw *OutputStream) SetLineBufferSize(n int) { rw.bufSize = n; rw.buf = make([]byte, rw.bufSize) }
+func (rw *LineStream) SetLineBufferSize(n int) { rw.bufSize = n; rw.buf = make([]byte, rw.bufSize) }
 
 // --------------------------------------------------------------------------
 
 const (
-	// DefaultLineBufferSize is the default size of the OutputStream line buffer.
+	// DefaultLineBufferSize is the default size of the LineStream line buffer.
 	// The default value is usually sufficient, but if ErrLineBufferOverflow errors
 	// occur, try increasing the size by calling OutputBuffer.SetLineBufferSize.
 	DefaultLineBufferSize = 16384
-
-	// DefaultStreamChanSize is the default string channel size for a Cmd when
-	// Options.Streaming is true. The string channel size can have a minor
-	// performance impact if too small by causing OutputStream.Write to block
-	// excessively.
-	DefaultStreamChanSize = 1000
 )
 
-// ErrLineBufferOverflow is returned by OutputStream.Write when the internal
+// ErrLineBufferOverflow is returned by LineStream.Write when the internal
 // line buffer is filled before a newline character is written to terminate a
-// line. Increasing the line buffer size by calling OutputStream.SetLineBufferSize
+// line. Increasing the line buffer size by calling LineStream.SetLineBufferSize
 // can help prevent this error.
 type ErrLineBufferOverflow struct {
 	Line       string // Unterminated line that caused the error
