@@ -91,12 +91,6 @@ func Run(cmd string, options ...func(*Cmd)) (string, error) {
 	return c.Stdout(), nil
 }
 
-func WithArgs(args []string) func(c *Cmd) {
-	return func(c *Cmd) {
-		c.Args = args
-	}
-}
-
 // WithCmd allows the OS specific generated baseCommand
 // to be overridden by an *os/exec.Cmd.
 //
@@ -105,9 +99,9 @@ func WithArgs(args []string) func(c *Cmd) {
 //	c := gocmd.New("", gocmd.WithCmd(exec.Cmd("echo", "hello")),
 //	)
 //	c.Run(context.TODO())
-func WithCmd(baseCommand *exec.Cmd) func(c *Cmd) {
+func WithCmd(cmd *exec.Cmd) func(c *Cmd) {
 	return func(c *Cmd) {
-		c.Cmd = baseCommand
+		c.Cmd = cmd
 		if c.Command != "" {
 			c.Cmd.Args = append(c.Cmd.Args, c.Command)
 		}

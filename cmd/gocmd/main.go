@@ -3,13 +3,14 @@ package main
 import (
 	"context"
 	"flag"
-	"github.com/bingoohuang/gocmd"
-	"github.com/bingoohuang/gocmd/linestream"
-	"github.com/bingoohuang/gocmd/shellquote"
 	"log"
 	"os"
 	"os/exec"
 	"time"
+
+	"github.com/bingoohuang/gocmd"
+	"github.com/bingoohuang/gocmd/linestream"
+	"github.com/bingoohuang/gocmd/shellquote"
 )
 
 func main() {
@@ -52,7 +53,7 @@ func main() {
 	}
 
 	cmd := gocmd.New(shell, options...)
-	if err := cmd.Run(context.Background()); err != nil {
+	if err := cmd.Run(context.TODO()); err != nil {
 		log.Fatalf("error: %v", err)
 	}
 

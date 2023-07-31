@@ -31,7 +31,7 @@ command object as an argument passed by reference.
 Default option functions:
 
 ```
-gocmd.WithBaseCommand(*exec.Cmd)
+gocmd.WithCmd(*exec.Cmd)
 gocmd.WithStdStreams()
 gocmd.WithStdout(...io.Writers)
 gocmd.WithStderr(...io.Writers)

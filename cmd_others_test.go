@@ -149,7 +149,7 @@ func TestCommand_WithContext(t *testing.T) {
 	assert.Equal(t, "context deadline exceeded", err.Error())
 }
 
-func TestCommand_WithCustomBaseCommand(t *testing.T) {
+func TestCommand_WithCmd(t *testing.T) {
 	c := gocmd.New(
 		"echo $0",
 		gocmd.WithCmd(exec.Command("/bin/bash", "-c")),
