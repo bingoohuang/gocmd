@@ -1,8 +1,8 @@
-// Package cmd runs external commands with concurrent access to output and
+// Package gocmd runs external commands with concurrent access to output and
 // status. It wraps the Go standard library os/exec.Command to correctly handle
 // reading output (STDOUT and STDERR) while a command is running and killing a
 // command. All operations are safe to call from multiple goroutines.
-package cmd
+package gocmd
 
 import (
 	"bytes"
@@ -50,14 +50,14 @@ type EnvVars map[string]string
 //
 // Example:
 //
-//	     c := cmd.New("echo hello", function (c *Cmd) {
+//	     c := gocmd.New("echo hello", function (c *Cmd) {
 //			    c.WorkingDir = "/tmp"
 //	     })
 //	     c.Run(context.TODO())
 //
 // or you can use existing options functions
 //
-//	c := cmd.New("echo hello", cmd.WithStdStreams)
+//	c := gocmd.New("echo hello", gocmd.WithStdStreams)
 //	c.Run(context.TODO())
 func New(cmd string, options ...func(*Cmd)) *Cmd {
 	c := &Cmd{
@@ -95,9 +95,9 @@ func Run(cmd string, options ...func(*Cmd)) (string, error) {
 //
 // Example:
 //
-//	c := cmd.New(
+//	c := gocmd.New(
 //	  "echo hello",
-//	  cmd.WithBaseCommand(exec.Cmd("/bin/bash", "-c")),
+//	  gocmd.WithBaseCommand(exec.Cmd("/bin/bash", "-c")),
 //	)
 //	c.Run(context.TODO())
 func WithBaseCommand(baseCommand *exec.Cmd) func(c *Cmd) {
@@ -112,7 +112,7 @@ func WithBaseCommand(baseCommand *exec.Cmd) func(c *Cmd) {
 //
 // Example:
 //
-//	c := cmd.New("echo hello", cmd.WithStdStreams())
+//	c := gocmd.New("echo hello", gocmd.WithStdStreams())
 //	c.Run(context.TODO())
 func WithStdStreams() func(c *Cmd) {
 	return func(c *Cmd) {
@@ -145,7 +145,7 @@ func WithStderr(writers ...io.Writer) func(c *Cmd) {
 //
 // Example:
 //
-//	cmd.New("sleep 10;", cmd.WithTimeout(500))
+//	gocmd.New("sleep 10;", gocmd.WithTimeout(500))
 func WithTimeout(t time.Duration) func(c *Cmd) {
 	return func(c *Cmd) {
 		c.Timeout = t
@@ -252,10 +252,10 @@ func (c *Cmd) Run(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
-		// cmd.Process.Kill();
+		// gocmd.Process.Kill();
 		// Signal the process group (-pid), not just the process, so that the process
 		// and all its children are signaled. Else, child procs can keep running and
-		// keep the stdout/stderr fd open and cause cmd.Wait to hang.
+		// keep the stdout/stderr fd open and cause gocmd.Wait to hang.
 		if err := syscall.Kill(-1*cmd.Process.Pid, syscall.SIGTERM); err != nil {
 			return fmt.Errorf("timeout, kill %v: %w", cmd.Process.Pid, err)
 		}

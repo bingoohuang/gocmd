@@ -1,6 +1,6 @@
 //go:build !windows
 
-package cmd_test
+package gocmd_test
 
 import (
 	"bytes"
@@ -13,12 +13,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bingoohuang/cmd"
+	"github.com/bingoohuang/gocmd"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCommand_ExecuteStderr1(t *testing.T) {
-	c := cmd.New(">&2 echo hello")
+	c := gocmd.New(">&2 echo hello")
 	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
@@ -26,7 +26,7 @@ func TestCommand_ExecuteStderr1(t *testing.T) {
 }
 
 func TestCommand_WithTimeout1(t *testing.T) {
-	c := cmd.New("sleep 0.1;", cmd.WithTimeout(1*time.Millisecond))
+	c := gocmd.New("sleep 0.1;", gocmd.WithTimeout(1*time.Millisecond))
 	err := c.Run(context.TODO())
 
 	assert.NotNil(t, err)
@@ -36,18 +36,18 @@ func TestCommand_WithTimeout1(t *testing.T) {
 }
 
 func TestCommand_WithValidTimeout1(t *testing.T) {
-	c := cmd.New("sleep 0.01;", cmd.WithTimeout(500*time.Millisecond))
+	c := gocmd.New("sleep 0.01;", gocmd.WithTimeout(500*time.Millisecond))
 	err := c.Run(context.TODO())
 	assert.Nil(t, err)
 }
 
 func TestCommand_WithWorkingDir(t *testing.T) {
 	tempDir := os.TempDir()
-	setWorkingDir := func(c *cmd.Cmd) {
+	setWorkingDir := func(c *gocmd.Cmd) {
 		c.WorkingDir = tempDir
 	}
 
-	c := cmd.New("pwd", setWorkingDir)
+	c := gocmd.New("pwd", setWorkingDir)
 	c.Run(context.TODO())
 
 	out := c.Stdout()
@@ -64,7 +64,7 @@ func TestCommand_WithStandardStreams(t *testing.T) {
 		os.Stdout = originalStdout
 	}()
 
-	c := cmd.New("echo hey", cmd.WithStdStreams())
+	c := gocmd.New("echo hey", gocmd.WithStdStreams())
 	c.Run(context.TODO())
 
 	r, err := os.ReadFile(tmpFile.Name())
@@ -73,7 +73,7 @@ func TestCommand_WithStandardStreams(t *testing.T) {
 }
 
 func TestCommand_WithoutTimeout(t *testing.T) {
-	c := cmd.New("sleep 0.001; echo hello", cmd.WithTimeout(0))
+	c := gocmd.New("sleep 0.001; echo hello", gocmd.WithTimeout(0))
 	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
@@ -81,7 +81,7 @@ func TestCommand_WithoutTimeout(t *testing.T) {
 }
 
 func TestCommand_WithInvalidDir(t *testing.T) {
-	c := cmd.New("echo hello", cmd.WithWorkingDir("/invalid"))
+	c := gocmd.New("echo hello", gocmd.WithWorkingDir("/invalid"))
 	err := c.Run(context.TODO())
 	assert.NotNil(t, err)
 	assert.True(t, strings.Contains(err.Error(), ": no such file or directory"))
@@ -95,9 +95,9 @@ func TestWithInheritedEnvironment(t *testing.T) {
 		os.Unsetenv("OVERWRITE")
 	}()
 
-	c := cmd.New(
+	c := gocmd.New(
 		"echo $FROM_OS $OVERWRITE",
-		cmd.WithEnv(map[string]string{"OVERWRITE": "overwritten"}))
+		gocmd.WithEnv(map[string]string{"OVERWRITE": "overwritten"}))
 	c.Run(context.TODO())
 
 	assertEqualWithLineBreak(t, "is on os overwritten", c.Stdout())
@@ -105,7 +105,7 @@ func TestWithInheritedEnvironment(t *testing.T) {
 
 func TestWithCustomStderr(t *testing.T) {
 	writer := bytes.Buffer{}
-	c := cmd.New(">&2 echo StderrBuf; sleep 0.01; echo StdoutBuf;", cmd.WithStderr(&writer))
+	c := gocmd.New(">&2 echo StderrBuf; sleep 0.01; echo StdoutBuf;", gocmd.WithStderr(&writer))
 	c.Run(context.TODO())
 
 	assertEqualWithLineBreak(t, "StderrBuf", writer.String())
@@ -116,7 +116,7 @@ func TestWithCustomStderr(t *testing.T) {
 
 func TestWithCustomStdout(t *testing.T) {
 	writer := bytes.Buffer{}
-	c := cmd.New(">&2 echo StderrBuf; sleep 0.01; echo StdoutBuf;", cmd.WithStdout(&writer))
+	c := gocmd.New(">&2 echo StderrBuf; sleep 0.01; echo StdoutBuf;", gocmd.WithStdout(&writer))
 	c.Run(context.TODO())
 
 	assertEqualWithLineBreak(t, "StdoutBuf", writer.String())
@@ -126,7 +126,7 @@ func TestWithCustomStdout(t *testing.T) {
 }
 
 func TestWithEnvironmentVariables(t *testing.T) {
-	c := cmd.New("echo $Env", cmd.WithEnv(map[string]string{"Env": "value"}))
+	c := gocmd.New("echo $Env", gocmd.WithEnv(map[string]string{"Env": "value"}))
 	c.Run(context.TODO())
 
 	assertEqualWithLineBreak(t, "value", c.Stdout())
@@ -134,7 +134,7 @@ func TestWithEnvironmentVariables(t *testing.T) {
 
 func TestCommand_WithContext(t *testing.T) {
 	// ensure legacy timeout is honored
-	c := cmd.New("sleep 3;", cmd.WithTimeout(1*time.Second))
+	c := gocmd.New("sleep 3;", gocmd.WithTimeout(1*time.Second))
 	err := c.Run(context.TODO())
 	assert.NotNil(t, err)
 	assert.Equal(t, "timeout after 1s", err.Error())
@@ -143,16 +143,16 @@ func TestCommand_WithContext(t *testing.T) {
 	// context takes precedence over timeout
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
-	c = cmd.New("sleep 3;", cmd.WithTimeout(1*time.Second))
+	c = gocmd.New("sleep 3;", gocmd.WithTimeout(1*time.Second))
 	err = c.Run(ctx)
 	assert.NotNil(t, err)
 	assert.Equal(t, "context deadline exceeded", err.Error())
 }
 
 func TestCommand_WithCustomBaseCommand(t *testing.T) {
-	c := cmd.New(
+	c := gocmd.New(
 		"echo $0",
-		cmd.WithBaseCommand(exec.Command("/bin/bash", "-c")),
+		gocmd.WithBaseCommand(exec.Command("/bin/bash", "-c")),
 	)
 
 	err := c.Run(context.TODO())
@@ -163,7 +163,7 @@ func TestCommand_WithCustomBaseCommand(t *testing.T) {
 }
 
 func TestCommand_ExecuteStderr(t *testing.T) {
-	c := cmd.New(">&2 echo hello")
+	c := gocmd.New(">&2 echo hello")
 	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
@@ -171,7 +171,7 @@ func TestCommand_ExecuteStderr(t *testing.T) {
 }
 
 func TestCommand_WithTimeout(t *testing.T) {
-	c := cmd.New("sleep 0.5;", cmd.WithTimeout(5*time.Millisecond))
+	c := gocmd.New("sleep 0.5;", gocmd.WithTimeout(5*time.Millisecond))
 	err := c.Run(context.TODO())
 
 	assert.NotNil(t, err)
@@ -179,7 +179,7 @@ func TestCommand_WithTimeout(t *testing.T) {
 }
 
 func TestCommand_WithValidTimeout(t *testing.T) {
-	c := cmd.New("sleep 0.01;", cmd.WithTimeout(500*time.Millisecond))
+	c := gocmd.New("sleep 0.01;", gocmd.WithTimeout(500*time.Millisecond))
 	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
@@ -191,7 +191,7 @@ func TestCommand_WithValidTimeout(t *testing.T) {
 // with an api changes
 func TestCommand_WithUser(t *testing.T) {
 	if runtime.GOOS == "linux" {
-		c := cmd.New("echo hello", cmd.WithUser(syscall.Credential{Uid: 1111}))
+		c := gocmd.New("echo hello", gocmd.WithUser(syscall.Credential{Uid: 1111}))
 		err := c.Run(context.TODO())
 		assert.Equal(t, uint32(1111), c.BaseCommand.SysProcAttr.Credential.Uid)
 		assert.Nil(t, err)
@@ -199,7 +199,7 @@ func TestCommand_WithUser(t *testing.T) {
 
 	if runtime.GOOS == "darwin" {
 		cred := syscall.Credential{}
-		c := cmd.New("echo hello", cmd.WithUser(cred))
+		c := gocmd.New("echo hello", gocmd.WithUser(cred))
 		err := c.Run(context.TODO())
 		assert.Error(t, err)
 	}

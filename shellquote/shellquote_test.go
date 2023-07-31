@@ -2,10 +2,11 @@ package shellquote_test
 
 import (
 	"encoding/json"
+	"errors"
 	"strings"
 	"testing"
 
-	"github.com/bingoohuang/cmd/shellquote"
+	"github.com/bingoohuang/gocmd/shellquote"
 	"github.com/google/go-cmp/cmp"
 )
 
@@ -39,7 +40,7 @@ func TestShellQuote(t *testing.T) {
 	test(t, []string{"foo=bar", "baz=quux", "command"}, `'foo=bar' 'baz=quux' command`)
 
 	_, err := shellquote.Quote("\x00")
-	if err != shellquote.ErrNull {
+	if !errors.Is(err, shellquote.ErrNull) {
 		t.Errorf("err should be ErrNull; was %s", err)
 	}
 }

@@ -1,4 +1,4 @@
-package cmd
+package gocmd
 
 import (
 	"os/exec"
@@ -6,7 +6,7 @@ import (
 )
 
 func createBaseCommand(c *Cmd) *exec.Cmd {
-	return exec.Command(`C:\windows\system32\cmd.exe`, "/C", c.Command)
+	return exec.Command(`cmd.exe`, "/C", c.Command)
 }
 
 // WithUser allows the command to be run as a different

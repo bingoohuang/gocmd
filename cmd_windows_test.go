@@ -1,4 +1,4 @@
-package cmd_test
+package gocmd_test
 
 import (
 	"context"
@@ -8,12 +8,12 @@ import (
 	"time"
 	"unsafe"
 
-	"github.com/bingoohuang/cmd"
+	"github.com/bingoohuang/gocmd"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCommand_ExecuteStderr(t *testing.T) {
-	c := cmd.New("echo hello 1>&2")
+	c := gocmd.New("echo hello 1>&2")
 	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
@@ -21,7 +21,7 @@ func TestCommand_ExecuteStderr(t *testing.T) {
 }
 
 func TestCommand_WithTimeout(t *testing.T) {
-	c := cmd.New("timeout 0.005;", cmd.WithTimeout(5*time.Millisecond))
+	c := gocmd.New("timeout 0.005;", gocmd.WithTimeout(5*time.Millisecond))
 	err := c.Run(context.TODO())
 
 	assert.NotNil(t, err)
@@ -31,7 +31,7 @@ func TestCommand_WithTimeout(t *testing.T) {
 }
 
 func TestCommand_WithValidTimeout(t *testing.T) {
-	c := cmd.New("timeout 0.01;", cmd.WithTimeout(1000*time.Millisecond))
+	c := gocmd.New("timeout 0.01;", gocmd.WithTimeout(1000*time.Millisecond))
 	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
@@ -40,7 +40,7 @@ func TestCommand_WithValidTimeout(t *testing.T) {
 func TestCommand_WithUser(t *testing.T) {
 	onehundred := 100
 	token := syscall.Token(uintptr(unsafe.Pointer(&onehundred)))
-	c := cmd.New("echo hello", cmd.WithUser(token))
+	c := gocmd.New("echo hello", gocmd.WithUser(token))
 	err := c.Run(context.TODO())
 	assert.Error(t, err)
 }

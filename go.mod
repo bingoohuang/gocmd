@@ -1,4 +1,4 @@
-module github.com/bingoohuang/cmd
+module github.com/bingoohuang/gocmd
 
 go 1.20
 

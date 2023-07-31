@@ -1,4 +1,4 @@
-package cmd_test
+package gocmd_test
 
 import (
 	"bytes"
@@ -9,12 +9,12 @@ import (
 	"testing"
 	"time"
 
-	"github.com/bingoohuang/cmd"
+	"github.com/bingoohuang/gocmd"
 	"github.com/stretchr/testify/assert"
 )
 
 func TestCommand_NewCommand(t *testing.T) {
-	c := cmd.New("echo hello")
+	c := gocmd.New("echo hello")
 	c.Run(context.TODO())
 
 	assertEqualWithLineBreak(t, "hello", c.Combined())
@@ -22,7 +22,7 @@ func TestCommand_NewCommand(t *testing.T) {
 }
 
 func TestCommand_Execute(t *testing.T) {
-	c := cmd.New("echo hello")
+	c := gocmd.New("echo hello")
 
 	err := c.Run(context.TODO())
 
@@ -32,7 +32,7 @@ func TestCommand_Execute(t *testing.T) {
 }
 
 func TestCommand_ExitCode(t *testing.T) {
-	c := cmd.New("exit 120")
+	c := gocmd.New("exit 120")
 
 	err := c.Run(context.TODO())
 
@@ -45,7 +45,7 @@ func TestCommand_WithEnvVariables(t *testing.T) {
 	if runtime.GOOS == "windows" {
 		envVar = "%TEST%"
 	}
-	c := cmd.New(fmt.Sprintf("echo %s", envVar))
+	c := gocmd.New(fmt.Sprintf("echo %s", envVar))
 	c.Env = []string{"TEST=hey"}
 
 	_ = c.Run(context.TODO())
@@ -62,12 +62,12 @@ func TestCommand_Executed(t *testing.T) {
 		assert.NotNil(t, r)
 	}()
 
-	c := cmd.New("echo will not be Executed")
+	c := gocmd.New("echo will not be Executed")
 	_ = c.Stdout()
 }
 
 func TestCommand_AddEnv(t *testing.T) {
-	c := cmd.New("echo test", cmd.WithoutEnv())
+	c := gocmd.New("echo test", gocmd.WithoutEnv())
 	c.AddEnv("key", "value")
 	assert.Equal(t, []string{"key=value"}, c.Env)
 }
@@ -77,7 +77,7 @@ func TestCommand_AddEnvWithShellVariable(t *testing.T) {
 	os.Setenv(TestEnvKey, "test from shell")
 	defer os.Unsetenv(TestEnvKey)
 
-	c := cmd.New(getCommand())
+	c := gocmd.New(getCommand())
 	c.AddEnv("SOME_KEY", fmt.Sprintf("${%s}", TestEnvKey))
 
 	err := c.Run(context.TODO())
@@ -96,7 +96,7 @@ func TestCommand_AddMultipleEnvWithShellVariable(t *testing.T) {
 		os.Unsetenv(TestEnvKeyName)
 	}()
 
-	c := cmd.New(getCommand())
+	c := gocmd.New(getCommand())
 	envValue := fmt.Sprintf("Hello ${%s}, I am ${%s}", TestEnvKeyPlanet, TestEnvKeyName)
 	c.AddEnv("SOME_KEY", envValue)
 
@@ -117,14 +117,14 @@ func getCommand() string {
 func TestCommand_SetOptions(t *testing.T) {
 	writer := &bytes.Buffer{}
 
-	setWriter := func(c *cmd.Cmd) {
+	setWriter := func(c *gocmd.Cmd) {
 		c.StdoutWriter = writer
 	}
-	setTimeout := func(c *cmd.Cmd) {
+	setTimeout := func(c *gocmd.Cmd) {
 		c.Timeout = 1 * time.Second
 	}
 
-	c := cmd.New("echo test", setTimeout, setWriter)
+	c := gocmd.New("echo test", setTimeout, setWriter)
 	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)

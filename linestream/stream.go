@@ -29,7 +29,7 @@ import (
 //	}()
 //
 //	runnableCmd := exec.Command(...)
-//	stdout := cmd.New(stdoutChan)
+//	stdout := gocmd.New(stdoutChan)
 //	runnableCmd.Stdout = stdout
 //
 // While runnableCmd is running, lines are sent to the channel as soon as they

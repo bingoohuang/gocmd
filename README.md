@@ -4,12 +4,12 @@ A simple package to execute shell commands on linux, darwin and windows.
 
 ## Installation
 
-`go get -u github.com/bingoohuang/cmd@latest`
+`go get -u github.com/bingoohuang/gocmd@latest`
 
 ## Usage
 
 ```go
-c := cmd.New("echo hello")
+c := gocmd.New("echo hello")
 
 err := c.Run(context.TODO())
 
@@ -20,7 +20,7 @@ fmt.Println(c.Stderr())
 // execute shell file with arguments
 
 shellCmd, err := shellquote.Quote("a.sh", "arg1", "args")
-c2 := cmd.New(shellCmd)
+c2 := gocmd.New(shellCmd)
 ```
 
 ## Configure the command
@@ -31,22 +31,22 @@ command object as an argument passed by reference.
 Default option functions:
 
 ```
-cmd.WithBaseCommand(*exec.Cmd)
-cmd.WithStdStreams()
-cmd.WithStdout(...io.Writers)
-cmd.WithStderr(...io.Writers)
-cmd.WithTimeout(time.Duration)
-cmd.WithWorkingDir(string)
-cmd.WithEnv(cmd.EnvVars)
+gocmd.WithBaseCommand(*exec.Cmd)
+gocmd.WithStdStreams()
+gocmd.WithStdout(...io.Writers)
+gocmd.WithStderr(...io.Writers)
+gocmd.WithTimeout(time.Duration)
+gocmd.WithWorkingDir(string)
+gocmd.WithEnv(gocmd.EnvVars)
 ```
 
 ### Example
 
 ```go
-c := cmd.New("echo hello", 
-	cmd.WithStdStreams(), 
-	cmd.WithWorkingDir("/tmp/test"),
-	cmd.WithStdout(linestream.New(func(line string) {
+c := gocmd.New("echo hello", 
+	gocmd.WithStdStreams(), 
+	gocmd.WithWorkingDir("/tmp/test"),
+	gocmd.WithStdout(linestream.New(func(line string) {
 	    fmt.Println(line)
     })))
 c.Run(context.TODO())

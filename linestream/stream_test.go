@@ -1,9 +1,10 @@
 package linestream_test
 
 import (
+	"errors"
 	"testing"
 
-	"github.com/bingoohuang/cmd/linestream"
+	"github.com/bingoohuang/gocmd/linestream"
 	"github.com/go-test/deep"
 )
 
@@ -263,8 +264,8 @@ func TestStreamingErrLineBufferOverflow1(t *testing.T) { // nolint funlen
 		t.Errorf("Write n = %d, expected 3", n)
 	}
 
-	switch errt := err.(type) {
-	case linestream.ErrLineBufferOverflow:
+	var errt linestream.ErrLineBufferOverflow
+	if errors.As(err, &errt) {
 		if errt.BufferSize != linestream.DefaultLineBufferSize {
 			t.Errorf("ErrLineBufferOverflow.BufferSize = %d, expected %d", errt.BufferSize, linestream.DefaultLineBufferSize)
 		}
@@ -280,7 +281,7 @@ func TestStreamingErrLineBufferOverflow1(t *testing.T) { // nolint funlen
 		if errt.Error() == "" {
 			t.Errorf("ErrLineBufferOverflow.Error() string is empty, expected something")
 		}
-	default:
+	} else {
 		t.Errorf("got err '%v', expected linestream.ErrLineBufferOverflow", err)
 	}
 
@@ -361,8 +362,8 @@ func TestStreamingErrLineBufferOverflow2(t *testing.T) {
 		t.Errorf("Write n = %d, expected 0", n)
 	}
 
-	switch errt := err.(type) {
-	case linestream.ErrLineBufferOverflow:
+	var errt linestream.ErrLineBufferOverflow
+	if errors.As(err, &errt) {
 		// Buffer has "bar" so it's free is total - 3
 		if errt.BufferFree != linestream.DefaultLineBufferSize-3 {
 			t.Errorf("ErrLineBufferOverflow.BufferFree = %d, expected %d", errt.BufferFree, linestream.DefaultLineBufferSize)
@@ -372,7 +373,7 @@ func TestStreamingErrLineBufferOverflow2(t *testing.T) {
 		if errt.Line != expectLine {
 			t.Errorf("ErrLineBufferOverflow.Line = '%s', expected '%s'", errt.Line, expectLine)
 		}
-	default:
+	} else {
 		t.Errorf("got err '%v', expected linestream.ErrLineBufferOverflow", err)
 	}
 }
