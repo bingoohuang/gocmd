@@ -137,7 +137,7 @@ func TestCommand_WithContext(t *testing.T) {
 	c := gocmd.New("sleep 3;", gocmd.WithTimeout(1*time.Second))
 	err := c.Run(context.TODO())
 	assert.NotNil(t, err)
-	assert.Equal(t, "timeout after 1s", err.Error())
+	assert.Equal(t, "timeout 1s: timeout", err.Error())
 
 	// set context timeout to 2 seconds to ensure
 	// context takes precedence over timeout
@@ -175,7 +175,7 @@ func TestCommand_WithTimeout(t *testing.T) {
 	err := c.Run(context.TODO())
 
 	assert.NotNil(t, err)
-	assert.Equal(t, "timeout after 5ms", err.Error())
+	assert.Equal(t, "timeout 5ms: timeout", err.Error())
 }
 
 func TestCommand_WithValidTimeout(t *testing.T) {

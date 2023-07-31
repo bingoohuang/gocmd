@@ -26,7 +26,7 @@ func TestCommand_WithTimeout(t *testing.T) {
 
 	assert.NotNil(t, err)
 	// This is needed because windows sometimes can not kill the process :(
-	containsMsg := strings.Contains(err.Error(), "timeout, kill") || strings.Contains(err.Error(), "timeout after 5ms")
+	containsMsg := strings.Contains(err.Error(), "timeout, kill") || strings.Contains(err.Error(), "timeout 5ms")
 	assert.True(t, containsMsg)
 }
 

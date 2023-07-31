@@ -215,7 +215,11 @@ func (c *Cmd) checkExecuted(property string) {
 	panic("Can not read " + property + " if command was not Executed.")
 }
 
+// ErrTimeout is an error for timeout
+var ErrTimeout = errors.New("timeout")
+
 // Run runs with Context
+// If timeout, a wrapped ErrTimeout returned.
 func (c *Cmd) Run(ctx context.Context) error {
 	cmd := c.Cmd
 	if cmd.SysProcAttr == nil {
@@ -253,7 +257,7 @@ func (c *Cmd) Run(ctx context.Context) error {
 
 	select {
 	case <-ctx.Done():
-		// gocmd.Process.Kill();
+		// cmd.Process.Kill();
 		// Signal the process group (-pid), not just the process, so that the process
 		// and all its children are signaled. Else, child procs can keep running and
 		// keep the stdout/stderr fd open and cause gocmd.Wait to hang.
@@ -262,7 +266,7 @@ func (c *Cmd) Run(ctx context.Context) error {
 		}
 
 		if timeoutCtx {
-			return fmt.Errorf("timeout after %v", c.Timeout)
+			return fmt.Errorf("timeout %v: %w", c.Timeout, ErrTimeout)
 		}
 		return ctx.Err()
 	case err := <-done:
