@@ -8,7 +8,7 @@ import (
 )
 
 func createBaseCommand(c *Cmd) *exec.Cmd {
-	return exec.Command("/bin/sh", "-c", c.Command)
+	return exec.Command("/bin/bash", "-c", c.Command)
 }
 
 // WithUser allows the command to be run as a different
@@ -21,9 +21,9 @@ func createBaseCommand(c *Cmd) *exec.Cmd {
 //	c.Run(context.TODO())
 func WithUser(credential syscall.Credential) func(c *Cmd) {
 	return func(c *Cmd) {
-		if c.BaseCommand.SysProcAttr == nil {
-			c.BaseCommand.SysProcAttr = &syscall.SysProcAttr{}
+		if c.Cmd.SysProcAttr == nil {
+			c.Cmd.SysProcAttr = &syscall.SysProcAttr{}
 		}
-		c.BaseCommand.SysProcAttr.Credential = &credential
+		c.Cmd.SysProcAttr.Credential = &credential
 	}
 }

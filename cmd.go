@@ -20,9 +20,10 @@ import (
 type Cmd struct {
 	stderrWriter io.Writer
 	StdoutWriter io.Writer
-	BaseCommand  *exec.Cmd
+	Cmd          *exec.Cmd
 	Dir          string
 	Command      string
+	Args         []string
 	WorkingDir   string
 	Env          []string
 
@@ -65,7 +66,7 @@ func New(cmd string, options ...func(*Cmd)) *Cmd {
 		Timeout: 1 * time.Minute,
 	}
 	c.Env = append(c.Env, os.Environ()...)
-	c.BaseCommand = createBaseCommand(c)
+	c.Cmd = createBaseCommand(c)
 	c.StdoutWriter = io.MultiWriter(&c.StdoutBuf, &c.CombinedBuf)
 	c.stderrWriter = io.MultiWriter(&c.StderrBuf, &c.CombinedBuf)
 
@@ -90,20 +91,26 @@ func Run(cmd string, options ...func(*Cmd)) (string, error) {
 	return c.Stdout(), nil
 }
 
-// WithBaseCommand allows the OS specific generated baseCommand
+func WithArgs(args []string) func(c *Cmd) {
+	return func(c *Cmd) {
+		c.Args = args
+	}
+}
+
+// WithCmd allows the OS specific generated baseCommand
 // to be overridden by an *os/exec.Cmd.
 //
 // Example:
 //
-//	c := gocmd.New(
-//	  "echo hello",
-//	  gocmd.WithBaseCommand(exec.Cmd("/bin/bash", "-c")),
+//	c := gocmd.New("", gocmd.WithCmd(exec.Cmd("echo", "hello")),
 //	)
 //	c.Run(context.TODO())
-func WithBaseCommand(baseCommand *exec.Cmd) func(c *Cmd) {
+func WithCmd(baseCommand *exec.Cmd) func(c *Cmd) {
 	return func(c *Cmd) {
-		baseCommand.Args = append(baseCommand.Args, c.Command)
-		c.BaseCommand = baseCommand
+		c.Cmd = baseCommand
+		if c.Command != "" {
+			c.Cmd.Args = append(c.Cmd.Args, c.Command)
+		}
 	}
 }
 
@@ -216,7 +223,7 @@ func (c *Cmd) checkExecuted(property string) {
 
 // Run runs with Context
 func (c *Cmd) Run(ctx context.Context) error {
-	cmd := c.BaseCommand
+	cmd := c.Cmd
 	if cmd.SysProcAttr == nil {
 		cmd.SysProcAttr = &syscall.SysProcAttr{}
 	}

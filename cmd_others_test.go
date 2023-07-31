@@ -152,7 +152,7 @@ func TestCommand_WithContext(t *testing.T) {
 func TestCommand_WithCustomBaseCommand(t *testing.T) {
 	c := gocmd.New(
 		"echo $0",
-		gocmd.WithBaseCommand(exec.Command("/bin/bash", "-c")),
+		gocmd.WithCmd(exec.Command("/bin/bash", "-c")),
 	)
 
 	err := c.Run(context.TODO())
@@ -193,7 +193,7 @@ func TestCommand_WithUser(t *testing.T) {
 	if runtime.GOOS == "linux" {
 		c := gocmd.New("echo hello", gocmd.WithUser(syscall.Credential{Uid: 1111}))
 		err := c.Run(context.TODO())
-		assert.Equal(t, uint32(1111), c.BaseCommand.SysProcAttr.Credential.Uid)
+		assert.Equal(t, uint32(1111), c.Cmd.SysProcAttr.Credential.Uid)
 		assert.Nil(t, err)
 	}
 

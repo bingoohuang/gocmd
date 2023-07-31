@@ -19,7 +19,7 @@ func createBaseCommand(c *Cmd) *exec.Cmd {
 //	c.Run(context.TODO())
 func WithUser(token syscall.Token) func(c *Cmd) {
 	return func(c *Cmd) {
-		c.BaseCommand.SysProcAttr = &syscall.SysProcAttr{
+		c.Cmd.SysProcAttr = &syscall.SysProcAttr{
 			Token: token,
 		}
 	}
