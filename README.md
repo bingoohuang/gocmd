@@ -1,4 +1,4 @@
-# cmd package
+# gocmd package
 
 A simple package to execute shell commands on linux, darwin and windows.
 
