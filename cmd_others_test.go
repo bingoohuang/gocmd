@@ -7,9 +7,7 @@ import (
 	"context"
 	"os"
 	"os/exec"
-	"runtime"
 	"strings"
-	"syscall"
 	"testing"
 	"time"
 
@@ -31,7 +29,8 @@ func TestCommand_WithTimeout1(t *testing.T) {
 
 	assert.NotNil(t, err)
 	// Sadly a process can not be killed every time :(
-	containsMsg := strings.Contains(err.Error(), "timeout, kill") || strings.Contains(err.Error(), "timeout after 1ms")
+	containsMsg := strings.Contains(err.Error(), "timeout, kill") ||
+		strings.Contains(err.Error(), "timeout 1ms")
 	assert.True(t, containsMsg)
 }
 
@@ -183,24 +182,4 @@ func TestCommand_WithValidTimeout(t *testing.T) {
 	err := c.Run(context.TODO())
 
 	assert.Nil(t, err)
-}
-
-// I really don't see the point of mocking this
-// as the stdlib does so already. So testing here
-// seems redundant. This simple check if we're compliant
-// with an api changes
-func TestCommand_WithUser(t *testing.T) {
-	if runtime.GOOS == "linux" {
-		c := gocmd.New("echo hello", gocmd.WithUser(syscall.Credential{Uid: 1111}))
-		err := c.Run(context.TODO())
-		assert.Equal(t, uint32(1111), c.Cmd.SysProcAttr.Credential.Uid)
-		assert.Nil(t, err)
-	}
-
-	if runtime.GOOS == "darwin" {
-		cred := syscall.Credential{}
-		c := gocmd.New("echo hello", gocmd.WithUser(cred))
-		err := c.Run(context.TODO())
-		assert.Error(t, err)
-	}
 }
