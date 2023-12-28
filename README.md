@@ -4,23 +4,21 @@ A simple package to execute shell commands on linux, darwin and windows.
 
 ## Installation
 
-`go get -u github.com/bingoohuang/gocmd@latest`
+`go get github.com/bingoohuang/gocmd@latest`
 
 ## Usage
 
 ```go
 c := gocmd.New("echo hello")
-
 err := c.Run(context.TODO())
 
 fmt.Println(c.Stdout())
 fmt.Println(c.Stderr())
 
-
 // execute shell file with arguments
-
-shellCmd, err := shellquote.Quote("a.sh", "arg1", "args")
-c2 := gocmd.New(shellCmd)
+sh, _ := shellquote.Quote("a.sh", "arg1", "args")
+c2 := gocmd.New(sh)
+c2.Run(context.TODO())
 ```
 
 ## Configure the command
