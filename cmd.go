@@ -36,6 +36,7 @@ type Cmd struct {
 
 	Executed bool
 	Setpgid  bool // 设置进程组
+	Setsid   bool // 设置进程组
 }
 
 // EnvVars represents a map where the key is the name of the Env variable
@@ -158,7 +159,14 @@ func WithTimeout(t time.Duration) func(c *Cmd) {
 // WithSetpgid sets Setpgid
 func WithSetpgid(value bool) func(c *Cmd) {
 	return func(c *Cmd) {
-		c.Setpgid = value // // 设置进程组
+		c.Setpgid = value // 设置进程组
+	}
+}
+
+// WithSetsid sets Setsid
+func WithSetsid(value bool) func(c *Cmd) {
+	return func(c *Cmd) {
+		c.Setsid = value
 	}
 }
 
@@ -232,12 +240,12 @@ var ErrTimeout = errors.New("timeout")
 func (c *Cmd) Run(ctx context.Context) error {
 	cmd := c.Cmd
 
-	if c.Setpgid {
-		if cmd.SysProcAttr == nil {
-			cmd.SysProcAttr = &syscall.SysProcAttr{}
-		}
-		cmd.SysProcAttr.Setpgid = true // 设置进程组
+	if cmd.SysProcAttr == nil {
+		cmd.SysProcAttr = &syscall.SysProcAttr{}
 	}
+
+	cmd.SysProcAttr.Setpgid = c.Setpgid // 设置进程组
+	cmd.SysProcAttr.Setsid = c.Setsid
 
 	cmd.Env = c.Env
 	cmd.Dir = c.Dir
