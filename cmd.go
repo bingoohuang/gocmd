@@ -231,11 +231,14 @@ var ErrTimeout = errors.New("timeout")
 // If timeout, a wrapped ErrTimeout returned.
 func (c *Cmd) Run(ctx context.Context) error {
 	cmd := c.Cmd
-	if cmd.SysProcAttr == nil {
-		cmd.SysProcAttr = &syscall.SysProcAttr{}
+
+	if c.Setpgid {
+		if cmd.SysProcAttr == nil {
+			cmd.SysProcAttr = &syscall.SysProcAttr{}
+		}
+		cmd.SysProcAttr.Setpgid = true // 设置进程组
 	}
 
-	cmd.SysProcAttr.Setpgid = c.Setpgid // // 设置进程组
 	cmd.Env = c.Env
 	cmd.Dir = c.Dir
 	cmd.Stdout = c.StdoutWriter
@@ -253,7 +256,7 @@ func (c *Cmd) Run(ctx context.Context) error {
 	}
 
 	if err := cmd.Start(); err != nil {
-		return err
+		return fmt.Errorf("start %s, Setpgid: %t: %w", cmd, c.Setpgid, err)
 	}
 	defer func() {
 		c.Executed = true
