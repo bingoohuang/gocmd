@@ -35,6 +35,7 @@ type Cmd struct {
 	exitCode    int
 
 	Executed bool
+	Setpgid  bool // 设置进程组
 }
 
 // EnvVars represents a map where the key is the name of the Env variable
@@ -64,6 +65,7 @@ func New(cmd string, options ...func(*Cmd)) *Cmd {
 	c := &Cmd{
 		Command: cmd,
 		Timeout: 1 * time.Minute,
+		Setpgid: true,
 	}
 	c.Env = append(c.Env, os.Environ()...)
 	c.Cmd = createBaseCommand(c)
@@ -153,6 +155,13 @@ func WithTimeout(t time.Duration) func(c *Cmd) {
 	}
 }
 
+// WithSetpgid sets Setpgid
+func WithSetpgid(value bool) func(c *Cmd) {
+	return func(c *Cmd) {
+		c.Setpgid = value // // 设置进程组
+	}
+}
+
 // WithWorkingDir sets the current working directory
 func WithWorkingDir(dir string) func(c *Cmd) {
 	return func(c *Cmd) {
@@ -226,7 +235,7 @@ func (c *Cmd) Run(ctx context.Context) error {
 		cmd.SysProcAttr = &syscall.SysProcAttr{}
 	}
 
-	cmd.SysProcAttr.Setpgid = true // // 设置进程组
+	cmd.SysProcAttr.Setpgid = c.Setpgid // // 设置进程组
 	cmd.Env = c.Env
 	cmd.Dir = c.Dir
 	cmd.Stdout = c.StdoutWriter
